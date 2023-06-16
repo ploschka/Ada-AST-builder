@@ -840,5 +840,28 @@ impl(Newline)
     }
     filedata->pos = 1;
     filedata->row++;
+    if (isSuitableForIdBeginning(_c))
+    {
+        filedata->accum.push_back(_c);
+        newstate(Id);
+    }
+    else if (std::isdigit(_c))
+    {
+        filedata->accum.push_back(_c);
+        newstate(FirstNumPart);
+    }
+    else
+    {
+        auto p = tablestate(_c);
+        ;
+        if (p)
+        {
+            lexer->setState(p(lexer, filedata));
+        }
+        else
+        {
+            filedata->put(Type::eof, filedata->row, initpos);
+        }
+    }
     return false;
 }
