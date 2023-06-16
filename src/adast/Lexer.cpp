@@ -7,17 +7,73 @@
 Type Lexer::recognize(const std::string &_id) const
 {
     static const std::unordered_map<std::string, Type> map = {
-        {"def", Type::defkw},
         {"if", Type::ifkw},
-        {"elif", Type::elifkw},
+        {"elsif", Type::elsifkw},
         {"else", Type::elsekw},
         {"for", Type::forkw},
         {"while", Type::whilekw},
-        {"class", Type::classkw},
         {"return", Type::returnkw},
-        {"yield", Type::yieldkw},
-        {"continue", Type::continuekw},
-        {"break", Type::breakkw}};
+        {"abort", Type::abortkw},
+        {"abs", Type::abskw},
+        {"abstract", Type::abstractkw},
+        {"accept", Type::acceptkw},
+        {"access", Type::accesskw},
+        {"aliased", Type::aliasedkw},
+        {"all", Type::allkw},
+        {"array", Type::arraykw},
+        {"at", Type::atkw},
+        {"begin", Type::beginkw},
+        {"body", Type::bodykw},
+        {"case", Type::casekw},
+        {"constant", Type::constantkw},
+        {"declare", Type::declarekw},
+        {"delay", Type::delaykw},
+        {"delta", Type::deltakw},
+        {"digits", Type::digitskw},
+        {"do", Type::dokw},
+        {"end", Type::endkw},
+        {"entry", Type::entrykw},
+        {"exception", Type::exceptionkw},
+        {"exit", Type::exitkw},
+        {"function", Type::functionkw},
+        {"generic", Type::generickw},
+        {"goto", Type::gotokw},
+        {"interface", Type::interfacekw},
+        {"limited", Type::limitedkw},
+        {"loop", Type::loopkw},
+        {"new", Type::newkw},
+        {"null", Type::nullkw},
+        {"of", Type::ofkw},
+        {"others", Type::otherskw},
+        {"out", Type::outkw},
+        {"overrid", Type::overridkw},
+        {"package", Type::packagekw},
+        {"pragma", Type::pragmakw},
+        {"private", Type::privatekw},
+        {"procedure", Type::procedurekw},
+        {"protected", Type::protectedkw},
+        {"raise", Type::raisekw},
+        {"range", Type::rangekw},
+        {"record", Type::recordkw},
+        {"rem", Type::remkw},
+        {"renames", Type::renameskw},
+        {"requeue", Type::requeuekw},
+        {"reverse", Type::reversekw},
+        {"select", Type::selectkw},
+        {"separate", Type::separatekw},
+        {"some", Type::somekw},
+        {"subtype", Type::subtypekw},
+        {"sync", Type::synckw},
+        {"tagged", Type::taggedkw},
+        {"task", Type::taskkw},
+        {"terminate", Type::terminatekw},
+        {"then", Type::thenkw},
+        {"type", Type::typekw},
+        {"until", Type::untilkw},
+        {"use", Type::usekw},
+        {"when", Type::whenkw},
+        {"while", Type::whilekw},
+        {"with", Type::withkw}};
 
     if (map.find(_id) != map.end())
         return map.at(_id);
@@ -51,7 +107,6 @@ Token Lexer::getToken()
     }
 
     Token tok = filedata->get();
-    bool failed = false;
 
     if (tok.getType() == Type::eof)
     {
@@ -68,20 +123,13 @@ Token Lexer::getToken()
             tok = filedata->get();
             if (tok.getType() == Type::eof)
             {
-                failed = true;
+                return tok;
             }
         }
         else
         {
-            failed = true;
+            return tok;
         }
-    }
-    if (failed)
-    {
-        filedata->unwind();
-        filedata->queue.push(tok);
-        tok = filedata->get();
-        return tok;
     }
 
     if (tok.getType() == Type::id)

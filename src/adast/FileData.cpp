@@ -1,19 +1,6 @@
 #include <adast/lexer/FileData.hpp>
 
-void FileData::unwind()
-{
-    while (stack.top() != 0)
-    {
-        queue.emplace("", Type::dedent, row, pos);
-        stack.pop();
-    }
-}
-
-FileData::FileData()
-{
-    stack.push(0);
-    intype = IndentType::null;
-}
+FileData::FileData(){}
 
 Token FileData::get()
 {

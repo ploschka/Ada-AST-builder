@@ -19,67 +19,54 @@
 typedef std::function<LexerStateInterface *(LexerInterface *, FileData *)> stateFactory_t;
 
 fac(String)
+fac(Character)
+fac(Ampersand)
 fac(Colon)
+fac(Semicolon)
 fac(Dot)
+fac(VerticalLine)
 fac(Plus)
 fac(Minus)
 fac(Star)
 fac(Div)
 fac(Mod)
-fac(Matmul)
 fac(Greater)
 fac(Less)
-fac(Assign)
-fac(Inv)
-fac(Band)
-fac(Bor)
-fac(Xor)
+fac(Equal)
 fac(Lpr)
 fac(Rpr)
-fac(Lsbr)
-fac(Rsbr)
-fac(Lbr)
-fac(Rbr)
-fac(Exclamation)
-fac(Newline)
-fac(Comment)
 fac(Comma)
 fac(Skip)
+fac(Newline)
 
 static std::unordered_map<char, stateFactory_t> table = {
+    tab('&', Ampersand),
     tab('+', Plus),
     tab('-', Minus),
     tab('*', Star),
     tab('/', Div),
-    tab('@', Matmul),
     tab('%', Mod),
-    tab('&', Band),
-    tab('|', Bor),
-    tab('^', Xor),
-    tab('!', Exclamation),
+    tab('|', VerticalLine),
     tab('<', Less),
     tab('>', Greater),
-    tab('=', Assign),
-    tab('~', Inv),
+    tab('=', Equal),
     tab('.', Dot),
     tab(',', Comma),
     tab('(', Lpr),
     tab(')', Rpr),
-    tab('[', Lsbr),
-    tab(']', Rsbr),
-    tab('{', Lbr),
-    tab('}', Rbr),
-    tab('#', Comment),
     tab(':', Colon),
+    tab(';', Semicolon),
     tab('"', String),
-    tab('\n', Newline)};
+    tab('\'', Character),
+    tab('\n', Newline)
+};
 
 static const std::unordered_set<char> symbols = {
-    '+', '-', '*', '/', '@', '%', '&', '|', '^', '!', '<', '>', '=', '~', '.', ',', '(', ')', '[', ']', '{', '}', '#', ':', '"', '\n'};
+    '+', '-', '*', '/', '&', '|', '<', '>', '=', '.', ',', '(', ')', ':', ';', '\'', '"', '\n'};
 
 static inline bool isSuitableForIdBeginning(char _c)
 {
-    return std::isalpha(_c) || _c == '_';
+    return std::isalpha(_c);
 }
 
 static inline bool isSuitableForId(char _c)
@@ -199,10 +186,123 @@ impl(String)
     return false;
 }
 
+impl(Character)
+{
+    filedata->pos++;
+    filedata->accum.push_back(_c);
+    if (_c == '\'')
+    {
+        filedata->put(Type::character, filedata->row, initpos);
+        newstate(Skip);
+    }
+    else
+    {
+        filedata->accum.push_back(_c);
+    }
+    return false;
+}
+
 impl(Colon)
 {
     filedata->pos++;
-    filedata->put(Type::colon, filedata->row, initpos);
+    if (_c == '=')
+    {
+        filedata->put(Type::assign, filedata->row, initpos);
+    }
+    else
+    {
+        filedata->put(Type::colon, filedata->row, initpos);
+        if (isSuitableForIdBeginning(_c))
+        {
+            filedata->accum.push_back(_c);
+            newstate(Id);
+        }
+        else if (std::isdigit(_c))
+        {
+            filedata->accum.push_back(_c);
+            newstate(FirstNumPart);
+        }
+        else
+        {
+            auto p = tablestate(_c);
+            ;
+            if (p)
+            {
+                lexer->setState(p(lexer, filedata));
+            }
+            else
+            {
+                filedata->put(Type::eof, filedata->row, initpos);
+            }
+        }
+    }
+    return false;
+}
+
+impl(Semicolon)
+{
+    filedata->pos++;
+    filedata->put(Type::semicolon, filedata->row, initpos);
+    if (isSuitableForIdBeginning(_c))
+    {
+        filedata->accum.push_back(_c);
+        newstate(Id);
+    }
+    else if (std::isdigit(_c))
+    {
+        filedata->accum.push_back(_c);
+        newstate(FirstNumPart);
+    }
+    else
+    {
+        auto p = tablestate(_c);
+        ;
+        if (p)
+        {
+            lexer->setState(p(lexer, filedata));
+        }
+        else
+        {
+            filedata->put(Type::eof, filedata->row, initpos);
+        }
+    }
+    return false;
+}
+
+impl(Ampersand)
+{
+    filedata->pos++;
+    filedata->put(Type::ampersand, filedata->row, initpos);
+    if (isSuitableForIdBeginning(_c))
+    {
+        filedata->accum.push_back(_c);
+        newstate(Id);
+    }
+    else if (std::isdigit(_c))
+    {
+        filedata->accum.push_back(_c);
+        newstate(FirstNumPart);
+    }
+    else
+    {
+        auto p = tablestate(_c);
+        ;
+        if (p)
+        {
+            lexer->setState(p(lexer, filedata));
+        }
+        else
+        {
+            filedata->put(Type::eof, filedata->row, initpos);
+        }
+    }
+    return false;
+}
+
+impl(VerticalLine)
+{
+    filedata->pos++;
+    filedata->put(Type::vertical, filedata->row, initpos);
     if (isSuitableForIdBeginning(_c))
     {
         filedata->accum.push_back(_c);
@@ -232,28 +332,35 @@ impl(Colon)
 impl(Dot)
 {
     filedata->pos++;
-    filedata->put(Type::dot, filedata->row, initpos);
-    if (isSuitableForIdBeginning(_c))
+    if (_c == '.')
     {
-        filedata->accum.push_back(_c);
-        newstate(Id);
-    }
-    else if (std::isdigit(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(FirstNumPart);
+        filedata->put(Type::doubledot, filedata->row, initpos);
     }
     else
     {
-        auto p = tablestate(_c);
-        ;
-        if (p)
+        filedata->put(Type::dot, filedata->row, initpos);
+        if (isSuitableForIdBeginning(_c))
         {
-            lexer->setState(p(lexer, filedata));
+            filedata->accum.push_back(_c);
+            newstate(Id);
+        }
+        else if (std::isdigit(_c))
+        {
+            filedata->accum.push_back(_c);
+            newstate(FirstNumPart);
         }
         else
         {
-            filedata->put(Type::eof, filedata->row, initpos);
+            auto p = tablestate(_c);
+            ;
+            if (p)
+            {
+                lexer->setState(p(lexer, filedata));
+            }
+            else
+            {
+                filedata->put(Type::eof, filedata->row, initpos);
+            }
         }
     }
     return false;
@@ -323,36 +430,28 @@ impl(SecondNumPart)
 impl(Plus)
 {
     filedata->pos++;
-    if (_c == '=')
+    filedata->put(Type::plus, filedata->row, initpos);
+    if (isSuitableForIdBeginning(_c))
     {
-        filedata->put(Type::plusass, filedata->row, initpos);
-        newstate(Skip);
+        filedata->accum.push_back(_c);
+        newstate(Id);
+    }
+    else if (std::isdigit(_c))
+    {
+        filedata->accum.push_back(_c);
+        newstate(FirstNumPart);
     }
     else
     {
-        filedata->put(Type::plus, filedata->row, initpos);
-        if (isSuitableForIdBeginning(_c))
+        auto p = tablestate(_c);
+        ;
+        if (p)
         {
-            filedata->accum.push_back(_c);
-            newstate(Id);
-        }
-        else if (std::isdigit(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(FirstNumPart);
+            lexer->setState(p(lexer, filedata));
         }
         else
         {
-            auto p = tablestate(_c);
-            ;
-            if (p)
-            {
-                lexer->setState(p(lexer, filedata));
-            }
-            else
-            {
-                filedata->put(Type::eof, filedata->row, initpos);
-            }
+            filedata->put(Type::eof, filedata->row, initpos);
         }
     }
     return false;
@@ -361,15 +460,9 @@ impl(Plus)
 impl(Minus)
 {
     filedata->pos++;
-    if (_c == '=')
+    if (_c == '-')
     {
-        filedata->put(Type::minass, filedata->row, initpos);
-        newstate(Skip);
-    }
-    else if (_c == '>')
-    {
-        filedata->put(Type::arrow, filedata->row, initpos);
-        newstate(Skip);
+        newstate(Comment);
     }
     else
     {
@@ -404,9 +497,9 @@ impl(Minus)
 impl(Star)
 {
     filedata->pos++;
-    if (_c == '=')
+    if (_c == '*')
     {
-        filedata->put(Type::mulass, filedata->row, initpos);
+        filedata->put(Type::power, filedata->row, initpos);
         newstate(Skip);
     }
     else
@@ -444,12 +537,8 @@ impl(Div)
     filedata->pos++;
     if (_c == '=')
     {
-        filedata->put(Type::divass, filedata->row, initpos);
+        filedata->put(Type::noteq, filedata->row, initpos);
         newstate(Skip);
-    }
-    else if (_c == '/')
-    {
-        newstate(Idiv);
     }
     else
     {
@@ -483,74 +572,28 @@ impl(Div)
 impl(Mod)
 {
     filedata->pos++;
-    if (_c == '=')
+    filedata->put(Type::mod, filedata->row, initpos);
+    if (isSuitableForIdBeginning(_c))
     {
-        filedata->put(Type::modass, filedata->row, initpos);
-        newstate(Skip);
+        filedata->accum.push_back(_c);
+        newstate(Id);
+    }
+    else if (std::isdigit(_c))
+    {
+        filedata->accum.push_back(_c);
+        newstate(FirstNumPart);
     }
     else
     {
-        filedata->put(Type::mod, filedata->row, initpos);
-        if (isSuitableForIdBeginning(_c))
+        auto p = tablestate(_c);
+        ;
+        if (p)
         {
-            filedata->accum.push_back(_c);
-            newstate(Id);
-        }
-        else if (std::isdigit(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(FirstNumPart);
+            lexer->setState(p(lexer, filedata));
         }
         else
         {
-            auto p = tablestate(_c);
-            ;
-            if (p)
-            {
-                lexer->setState(p(lexer, filedata));
-            }
-            else
-            {
-                filedata->put(Type::eof, filedata->row, initpos);
-            }
-        }
-    }
-    return false;
-}
-
-impl(Matmul)
-{
-    filedata->pos++;
-    if (_c == '=')
-    {
-        filedata->put(Type::matmulass, filedata->row, initpos);
-        newstate(Skip);
-    }
-    else
-    {
-        filedata->put(Type::matmul, filedata->row, initpos);
-        if (isSuitableForIdBeginning(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(Id);
-        }
-        else if (std::isdigit(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(FirstNumPart);
-        }
-        else
-        {
-            auto p = tablestate(_c);
-            ;
-            if (p)
-            {
-                lexer->setState(p(lexer, filedata));
-            }
-            else
-            {
-                filedata->put(Type::eof, filedata->row, initpos);
-            }
+            filedata->put(Type::eof, filedata->row, initpos);
         }
     }
     return false;
@@ -566,7 +609,8 @@ impl(Greater)
     }
     else if (_c == '>')
     {
-        newstate(Rshift);
+        filedata->put(Type::rlabbr, filedata->row, initpos);
+        newstate(Skip);
     }
     else
     {
@@ -606,9 +650,15 @@ impl(Less)
         filedata->put(Type::lequal, filedata->row, initpos);
         newstate(Skip);
     }
+    else if (_c == '<')
+    {
+        filedata->put(Type::llabbr, filedata->row, initpos);
+        newstate(Skip);
+    }
     else if (_c == '>')
     {
-        newstate(Rshift);
+        filedata->put(Type::box, filedata->row, initpos);
+        newstate(Skip);
     }
     else
     {
@@ -640,17 +690,17 @@ impl(Less)
     return false;
 }
 
-impl(Assign)
+impl(Equal)
 {
     filedata->pos++;
-    if (_c == '=')
+    if (_c == '>')
+    {
+        filedata->put(Type::arrow, filedata->row, initpos);
+        newstate(Skip);
+    }
+    else
     {
         filedata->put(Type::equal, filedata->row, initpos);
-        newstate(Skip);
-    }
-    else
-    {
-        filedata->put(Type::assign, filedata->row, initpos);
         if (isSuitableForIdBeginning(_c))
         {
             filedata->accum.push_back(_c);
@@ -675,151 +725,6 @@ impl(Assign)
             }
         }
     }
-    return false;
-}
-
-impl(Inv)
-{
-    filedata->pos++;
-    filedata->put(Type::inv, filedata->row, initpos);
-    if (isSuitableForIdBeginning(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(Id);
-    }
-    else if (std::isdigit(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(FirstNumPart);
-    }
-    else
-    {
-        auto p = tablestate(_c);
-        ;
-        if (p)
-        {
-            lexer->setState(p(lexer, filedata));
-        }
-        else
-        {
-            filedata->put(Type::eof, filedata->row, initpos);
-        }
-    }
-    return false;
-}
-
-impl(Band)
-{
-    filedata->pos++;
-    if (_c == '=')
-    {
-        filedata->put(Type::bandass, filedata->row, initpos);
-        newstate(Skip);
-    }
-    else
-    {
-        filedata->put(Type::band, filedata->row, initpos);
-        if (isSuitableForIdBeginning(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(Id);
-        }
-        else if (std::isdigit(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(FirstNumPart);
-        }
-        else
-        {
-            auto p = tablestate(_c);
-            ;
-            if (p)
-            {
-                lexer->setState(p(lexer, filedata));
-            }
-            else
-            {
-                filedata->put(Type::eof, filedata->row, initpos);
-            }
-        }
-    }
-    return false;
-}
-
-impl(Bor)
-{
-    filedata->pos++;
-    if (_c == '=')
-    {
-        filedata->put(Type::borass, filedata->row, initpos);
-        newstate(Skip);
-    }
-    else
-    {
-        filedata->put(Type::bor, filedata->row, initpos);
-        if (isSuitableForIdBeginning(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(Id);
-        }
-        else if (std::isdigit(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(FirstNumPart);
-        }
-        else
-        {
-            auto p = tablestate(_c);
-            ;
-            if (p)
-            {
-                lexer->setState(p(lexer, filedata));
-            }
-            else
-            {
-                filedata->put(Type::eof, filedata->row, initpos);
-            }
-        }
-    }
-    return false;
-}
-
-impl(Xor)
-{
-    filedata->pos++;
-    if (_c == '=')
-    {
-        filedata->put(Type::xorass, filedata->row, initpos);
-        newstate(Skip);
-    }
-    else
-    {
-        filedata->put(Type::xorop, filedata->row, initpos);
-        if (isSuitableForIdBeginning(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(Id);
-        }
-        else if (std::isdigit(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(FirstNumPart);
-        }
-        else
-        {
-            auto p = tablestate(_c);
-            ;
-            if (p)
-            {
-                lexer->setState(p(lexer, filedata));
-            }
-            else
-            {
-                filedata->put(Type::eof, filedata->row, initpos);
-            }
-        }
-    }
-
     return false;
 }
 
@@ -883,285 +788,11 @@ impl(Rpr)
     return false;
 }
 
-impl(Lsbr)
-{
-    filedata->pos++;
-    filedata->put(Type::lsbr, filedata->row, initpos);
-    if (isSuitableForIdBeginning(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(Id);
-    }
-    else if (std::isdigit(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(FirstNumPart);
-    }
-    else
-    {
-        auto p = tablestate(_c);
-        ;
-        if (p)
-        {
-            lexer->setState(p(lexer, filedata));
-        }
-        else
-        {
-            filedata->put(Type::eof, filedata->row, initpos);
-        }
-    }
-    return false;
-}
-
-impl(Rsbr)
-{
-    filedata->pos++;
-    filedata->put(Type::rsbr, filedata->row, initpos);
-    if (isSuitableForIdBeginning(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(Id);
-    }
-    else if (std::isdigit(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(FirstNumPart);
-    }
-    else
-    {
-        auto p = tablestate(_c);
-        ;
-        if (p)
-        {
-            lexer->setState(p(lexer, filedata));
-        }
-        else
-        {
-            filedata->put(Type::eof, filedata->row, initpos);
-        }
-    }
-    return false;
-}
-
-impl(Lbr)
-{
-    filedata->pos++;
-    filedata->put(Type::lbr, filedata->row, initpos);
-    if (isSuitableForIdBeginning(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(Id);
-    }
-    else if (std::isdigit(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(FirstNumPart);
-    }
-    else
-    {
-        auto p = tablestate(_c);
-        ;
-        if (p)
-        {
-            lexer->setState(p(lexer, filedata));
-        }
-        else
-        {
-            filedata->put(Type::eof, filedata->row, initpos);
-        }
-    }
-    return false;
-}
-
-impl(Rbr)
-{
-    filedata->pos++;
-    filedata->put(Type::rbr, filedata->row, initpos);
-    if (isSuitableForIdBeginning(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(Id);
-    }
-    else if (std::isdigit(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(FirstNumPart);
-    }
-    else
-    {
-        auto p = tablestate(_c);
-        ;
-        if (p)
-        {
-            lexer->setState(p(lexer, filedata));
-        }
-        else
-        {
-            filedata->put(Type::eof, filedata->row, initpos);
-        }
-    }
-    return false;
-}
-
-impl(Idiv)
-{
-    filedata->pos++;
-    if (_c == '=')
-    {
-        filedata->put(Type::idivass, filedata->row, initpos);
-        newstate(Skip);
-    }
-    else
-    {
-        filedata->put(Type::idiv, filedata->row, initpos);
-        if (isSuitableForIdBeginning(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(Id);
-        }
-        else if (std::isdigit(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(FirstNumPart);
-        }
-        else
-        {
-            auto p = tablestate(_c);
-            ;
-            if (p)
-            {
-                lexer->setState(p(lexer, filedata));
-            }
-            else
-            {
-                filedata->put(Type::eof, filedata->row, initpos);
-            }
-        }
-    }
-    return false;
-}
-
-impl(Lshift)
-{
-    filedata->pos++;
-    if (_c == '=')
-    {
-        filedata->put(Type::lshiftass, filedata->row, initpos);
-        newstate(Skip);
-    }
-    else
-    {
-        filedata->put(Type::lshift, filedata->row, initpos);
-        if (isSuitableForIdBeginning(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(Id);
-        }
-        else if (std::isdigit(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(FirstNumPart);
-        }
-        else
-        {
-            auto p = tablestate(_c);
-            ;
-            if (p)
-            {
-                lexer->setState(p(lexer, filedata));
-            }
-            else
-            {
-                filedata->put(Type::eof, filedata->row, initpos);
-            }
-        }
-    }
-
-    return false;
-}
-
-impl(Rshift)
-{
-    filedata->pos++;
-    if (_c == '=')
-    {
-        filedata->put(Type::rshiftass, filedata->row, initpos);
-        newstate(Skip);
-    }
-    else
-    {
-        filedata->put(Type::rshift, filedata->row, initpos);
-        if (isSuitableForIdBeginning(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(Id);
-        }
-        else if (std::isdigit(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(FirstNumPart);
-        }
-        else
-        {
-            auto p = tablestate(_c);
-            ;
-            if (p)
-            {
-                lexer->setState(p(lexer, filedata));
-            }
-            else
-            {
-                filedata->put(Type::eof, filedata->row, initpos);
-            }
-        }
-    }
-    return false;
-}
-
-impl(Exclamation)
-{
-    filedata->pos++;
-    if (_c == '=')
-    {
-        filedata->put(Type::noteq, filedata->row, initpos);
-        newstate(Skip);
-    }
-    else
-    {
-        filedata->put(Type::unexpected, filedata->row, initpos);
-        if (isSuitableForIdBeginning(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(Id);
-        }
-        else if (std::isdigit(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(FirstNumPart);
-        }
-        else
-        {
-            auto p = tablestate(_c);
-            ;
-            if (p)
-            {
-                lexer->setState(p(lexer, filedata));
-            }
-            else
-            {
-                filedata->put(Type::eof, filedata->row, initpos);
-            }
-        }
-    }
-
-    return false;
-}
-
 impl(Comment)
 {
     if (_c == '\n')
     {
-        newstate(Newline);
+        newstate(Skip);
     }
     return false;
 }
@@ -1207,183 +838,7 @@ impl(Newline)
         filedata->put(Type::eof, filedata->row, initpos);
         return false;
     }
-    filedata->put(Type::newline, filedata->row, initpos);
     filedata->pos = 1;
     filedata->row++;
-    if (_c == ' ' || _c == '\t')
-    {
-        lexer->setState(new Indent(lexer, filedata, _c));
-    }
-    else
-    {
-        if (filedata->stack.top() > 0)
-        {
-            while (filedata->stack.top() != 0)
-            {
-                filedata->stack.pop();
-                filedata->put(Type::dedent, filedata->row, initpos);
-            }
-        }
-        if (isSuitableForIdBeginning(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(Id);
-        }
-        else if (std::isdigit(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(FirstNumPart);
-        }
-        else
-        {
-            auto p = tablestate(_c);
-            ;
-            if (p)
-            {
-                lexer->setState(p(lexer, filedata));
-            }
-            else
-            {
-                filedata->put(Type::eof, filedata->row, initpos);
-            }
-        }
-    }
-    return false;
-}
-
-Indent::Indent(LexerInterface *_lex, FileData *_filedata, char _c) : BaseLexerState(_lex, _filedata), prevchar(_c) {}
-
-bool Indent::recognize(char _c)
-{
-    // bool indent = false;
-    filedata->pos++;
-    if (prevchar > 0)
-    {
-        if (filedata->intype == IndentType::null)
-        {
-            switch (prevchar)
-            {
-            case ' ':
-                filedata->intype = IndentType::space;
-                break;
-            case '\t':
-                filedata->intype = IndentType::tab;
-                break;
-            }
-        }
-
-        switch (filedata->intype)
-        {
-        case (IndentType::space):
-            switch (prevchar)
-            {
-            case ' ':
-                intcount++;
-                break;
-            case '\t':
-                filedata->put(Type::tabspacemix, filedata->row, initpos);
-                return false;
-                break;
-            }
-            break;
-
-        case (IndentType::tab):
-            switch (prevchar)
-            {
-            case '\t':
-                intcount++;
-                break;
-            case ' ':
-                filedata->put(Type::tabspacemix, filedata->row, initpos);
-                return false;
-                break;
-            }
-            break;
-        default:
-            break;
-        }
-        prevchar = 0;
-    }
-
-    if (_c == ' ' || _c == ' ')
-    {
-        switch (filedata->intype)
-        {
-        case (IndentType::space):
-            switch (_c)
-            {
-            case ' ':
-                intcount++;
-                return false;
-                break;
-            case '\t':
-                filedata->put(Type::tabspacemix, filedata->row, initpos);
-                return false;
-                break;
-            }
-            break;
-
-        case (IndentType::tab):
-            switch (_c)
-            {
-            case '\t':
-                intcount++;
-                return false;
-                break;
-            case ' ':
-                filedata->put(Type::tabspacemix, filedata->row, initpos);
-                return false;
-                break;
-            }
-            break;
-        default:
-            break;
-        }
-    }
-    else
-    {
-        if (intcount > filedata->stack.top())
-        {
-            filedata->stack.push(intcount);
-            filedata->put(Type::indent, filedata->row, initpos);
-        }
-        else if (intcount < filedata->stack.top())
-        {
-            while (!filedata->stack.empty() && intcount != filedata->stack.top())
-            {
-                filedata->stack.pop();
-                filedata->put(Type::dedent, filedata->row, initpos);
-            }
-            if (filedata->stack.empty())
-            {
-                filedata->put(Type::indenterror, filedata->row, initpos);
-            }
-        }
-
-        if (isSuitableForIdBeginning(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(Id);
-        }
-        else if (std::isdigit(_c))
-        {
-            filedata->accum.push_back(_c);
-            newstate(FirstNumPart);
-        }
-        else
-        {
-            auto p = tablestate(_c);
-            ;
-            if (p)
-            {
-                lexer->setState(p(lexer, filedata));
-            }
-            else
-            {
-                filedata->put(Type::eof, filedata->row, initpos);
-            }
-        }
-    }
-
     return false;
 }

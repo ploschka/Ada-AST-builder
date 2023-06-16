@@ -31,44 +31,26 @@ st(Id)
 st(FirstNumPart)
 st(SecondNumPart)
 st(String)
+st(Character)
 st(Colon)
+st(Semicolon)
+st(VerticalLine)
 st(Dot)
 st(Plus)
 st(Minus)
 st(Star)
 st(Div)
 st(Mod)
-st(Matmul)
+st(Ampersand)
 st(Greater)
 st(Less)
-st(Assign)
+st(Equal)
 st(Inv)
 st(Band)
-st(Bor)
-st(Xor)
 st(Lpr)
 st(Rpr)
-st(Lsbr)
-st(Rsbr)
-st(Lbr)
-st(Rbr)
-st(Idiv)
-st(Exclamation)
-st(Lshift)
-st(Rshift)
-st(Newline)
 st(Comment)
 st(Comma)
-
-class Indent : public BaseLexerState
-{
-private:
-    unsigned int intcount = 0;
-    char prevchar;
-
-public:
-    Indent(LexerInterface *_lex, FileData *_filedata, char _c);
-    bool recognize(char _c);
-};
+st(Newline)
 
 #undef st
