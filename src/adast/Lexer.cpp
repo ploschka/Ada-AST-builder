@@ -73,7 +73,15 @@ Type Lexer::recognize(const std::string &_id) const
         {"use", Type::usekw},
         {"when", Type::whenkw},
         {"while", Type::whilekw},
-        {"with", Type::withkw}};
+        {"with", Type::withkw},
+        {"mod", Type::mod},
+        {"not", Type::notop},
+        {"in", Type::in},
+        {"is", Type::is},
+        {"and", Type::andop},
+        {"or", Type::orop},
+        {"xor", Type::xorop}
+};
 
     if (map.find(_id) != map.end())
         return map.at(_id);
