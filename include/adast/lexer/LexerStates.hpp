@@ -25,9 +25,17 @@ protected:
     BaseLexerState(LexerInterface *_lex, FileData *_filedata);
 };
 
+class Id : public BaseLexerState
+{
+private:
+    bool hasUnderscore = false;
+public:
+    Id(LexerInterface *_lex, FileData *_filedata);
+    bool recognize(char _c);
+};
+
 st(Start)
 st(Skip)
-st(Id)
 st(FirstNumPart)
 st(SecondNumPart)
 st(String)

@@ -151,7 +151,20 @@ impl(Id)
 {
     filedata->pos++;
     if (isSuitableForId(_c))
-    {
+    {   
+        if (_c == '_' && hasUnderscore)
+        {
+            filedata->put(Type::unexpected, filedata->row, filedata->pos);
+            return false;
+        }
+        else if (_c == '_' && !hasUnderscore)
+        {
+            hasUnderscore = true;
+        }
+        else
+        {
+            hasUnderscore = false;
+        }
         filedata->accum.push_back(_c);
     }
     else
