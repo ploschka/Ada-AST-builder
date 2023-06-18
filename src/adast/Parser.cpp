@@ -347,14 +347,22 @@ WhileNode *Parser::while_stmt() {
 ForNode *Parser::for_stmt() {
     /*
     for_stmt:
-        | FORKW iterator IN NUMBER DOUBLEDOT NUMBER LOOPKW block ENDKW LOOPKW
+        | FORKW ID IN (NUMBER | ID) DOUBLEDOT (NUMBER | ID) LOOPKW block ENDKW LOOPKW
      */
     this->check_get_next(Type::forkw);
     Leaf *iterator = new Leaf(this->check_get_next(Type::id));
     this->check_get_next(Type::in);
-    Leaf *from = new Leaf(this->check_get_next(Type::number));
+    Leaf* from;
+    Leaf* to;
+    if (this->token_matches_any({Type::number, Type::id})) {
+        from = new Leaf(this->get_token());
+        this->next_token();
+    } else { this->error("for_stmt"); }
     this->check_get_next(Type::doubledot);
-    Leaf *to = new Leaf(this->check_get_next(Type::number));
+    if (this->token_matches_any({Type::number, Type::id})) {
+        to = new Leaf(this->get_token());
+        this->next_token();
+    } else { this->error("for_stmt"); }
     this->check_get_next(Type::loopkw);
     BlockNode *body = this->block();
     this->check_get_next(Type::endkw);
