@@ -8,8 +8,9 @@ function rangeSum(rangeStart: Integer; rangeEnd: Integer) return Integer
 is
 begin
     s := 0;
-    for i in start .. end loop
-        s = s + i;
+    b := 0;
+    for i in rangeStart .. rangeEnd loop
+        s := s + i;
     end loop;
     return s;
 end rangeSum;
@@ -23,3 +24,5 @@ procedure main() is begin
         print(rangeSum(100, 1000));
     end if;
 end main;
+
+main();
