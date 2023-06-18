@@ -160,7 +160,7 @@ void ProgramNode::print(int indent) {
 }
 
 void FunctionNode::print(int indent) {
-    std::string text = "Function def";
+    std::string text = "Function declaration";
     print_indented_line(text, indent);
     print_indented_line("name:", indent+1);
     this->id->print(indent+2);
@@ -171,7 +171,7 @@ void FunctionNode::print(int indent) {
 }
 
 void ProcedureNode::print(int indent) {
-    std::string text = "Function def";
+    std::string text = "Procedure declaration";
     print_indented_line(text, indent);
     print_indented_line("name:", indent+1);
     this->id->print(indent+2);
