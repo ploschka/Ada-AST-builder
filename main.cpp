@@ -19,14 +19,20 @@ int main(int argc, char *argv[]) {
         auto lexfac = LexerFactory();
         auto parfac = ParserFactory();
 
-        std::ifstream file(argv[1]);
 
         auto lexer = lexfac.create();
-        lexer->open(file);
-
         auto parser = parfac.create();
 
-//        lexer->print_all_tokens();
+        // Выводим все лексемы, полученные лексером
+        std::cout << "Lexer:\n";
+        std::ifstream file_lexer(argv[1]);
+        lexer->open(file_lexer);
+        lexer->print_all_tokens();
+
+        // Выводим дерево, полученное парсером
+        std::cout << "\n\nParser:\n";
+        std::ifstream file_parser(argv[1]);
+        lexer->open(file_parser);
         parser->setLexer(lexer.get());
         parser->getAST()->print();
     }
