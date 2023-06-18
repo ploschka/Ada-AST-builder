@@ -110,6 +110,8 @@ enum class Type
     unexpected, // Без комментариев
 };
 
+std::string type_to_str(Type type);
+
 class Token
 {
 private:
