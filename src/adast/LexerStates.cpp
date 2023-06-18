@@ -29,7 +29,6 @@ fac(Plus)
 fac(Minus)
 fac(Star)
 fac(Div)
-fac(Mod)
 fac(Greater)
 fac(Less)
 fac(Equal)
@@ -45,7 +44,6 @@ static std::unordered_map<char, stateFactory_t> table = {
     tab('-', Minus),
     tab('*', Star),
     tab('/', Div),
-    tab('%', Mod),
     tab('|', VerticalLine),
     tab('<', Less),
     tab('>', Greater),
@@ -221,6 +219,7 @@ impl(Colon)
     if (_c == '=')
     {
         filedata->put(Type::assign, filedata->row, initpos);
+        newstate(Skip);
     }
     else
     {
@@ -348,6 +347,7 @@ impl(Dot)
     if (_c == '.')
     {
         filedata->put(Type::doubledot, filedata->row, initpos);
+        newstate(Skip);
     }
     else
     {
@@ -582,35 +582,6 @@ impl(Div)
     }
     return false;
 }
-impl(Mod)
-{
-    filedata->pos++;
-    filedata->put(Type::mod, filedata->row, initpos);
-    if (isSuitableForIdBeginning(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(Id);
-    }
-    else if (std::isdigit(_c))
-    {
-        filedata->accum.push_back(_c);
-        newstate(FirstNumPart);
-    }
-    else
-    {
-        auto p = tablestate(_c);
-        ;
-        if (p)
-        {
-            lexer->setState(p(lexer, filedata));
-        }
-        else
-        {
-            filedata->put(Type::eof, filedata->row, initpos);
-        }
-    }
-    return false;
-}
 
 impl(Greater)
 {
@@ -805,7 +776,7 @@ impl(Comment)
 {
     if (_c == '\n')
     {
-        newstate(Skip);
+        newstate(Newline);
     }
     return false;
 }
@@ -842,15 +813,6 @@ impl(Comma)
 
 impl(Newline)
 {
-    if (_c == '\n')
-    {
-        return false;
-    }
-    if (_c == '\0')
-    {
-        filedata->put(Type::eof, filedata->row, initpos);
-        return false;
-    }
     filedata->pos = 1;
     filedata->row++;
     if (isSuitableForIdBeginning(_c))
