@@ -26,9 +26,9 @@ int main(int argc, char *argv[]) {
 
         auto parser = parfac.create();
 
-        lexer->print_all_tokens();
-//        parser->setLexer(lexer.get());
-//        parser->getAST()->print();
+//        lexer->print_all_tokens();
+        parser->setLexer(lexer.get());
+        parser->getAST()->print();
     }
     return 0;
 }
