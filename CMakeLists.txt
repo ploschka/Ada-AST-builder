@@ -19,6 +19,7 @@ add_library(lexer STATIC ${lexlib})
 add_library(parser STATIC ${parslib})
 
 target_link_libraries(lexer token)
+target_link_libraries(parser lexer ast token)
 
 set(libs lexer parser)
 
