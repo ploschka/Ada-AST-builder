@@ -38,9 +38,12 @@ int main(int argc, char *argv[]) {
         lexer->open(file_parser);
         parser->setLexer(lexer.get());
         auto ast = parser->getAST();
-
         ast->print();
-
+        
+        // Инициализируем стандартную библитеку
+        seman->stdinit();
+        
+        // Проводим семантический анализ дерева
         seman->check(ast);        
     }
     return 0;

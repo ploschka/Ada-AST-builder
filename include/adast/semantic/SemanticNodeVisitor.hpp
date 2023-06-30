@@ -9,12 +9,8 @@
 
 class SemanticNodeVisitor : public NodeVisitorInterface
 {
-    typedef std::map<std::string, Token> localtable_t;
-
-private:
-    std::stack<std::unique_ptr<localtable_t>> symtable;
-
 public:
+    typedef std::map<std::string, Token> localtable_t;
     void visitLeaf(Leaf *_acceptor);
     void visitFormalParamsNode(FormalParamsNode *_acceptor);
     void visitActualParamsNode(ActualParamsNode *_acceptor);
@@ -33,4 +29,9 @@ public:
     void visitIfNode(IfNode *_acceptor);
     void visitWhileNode(WhileNode *_acceptor);
     void visitForNode(ForNode *_acceptor);
+
+    void stdinit(localtable_t *);
+
+private:
+    std::stack<std::unique_ptr<localtable_t>> symtable;
 };

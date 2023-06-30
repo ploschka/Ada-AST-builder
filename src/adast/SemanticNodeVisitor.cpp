@@ -74,14 +74,6 @@ void SemanticNodeVisitor::visitBlockNode(BlockNode *_acceptor)
 
 void SemanticNodeVisitor::visitProgramNode(ProgramNode *_acceptor)
 {
-    symtable.push(std::make_unique<localtable_t>());
-
-    auto tr = Token("true", Type::id);
-    auto fl = Token("false", Type::id);
-
-    symtable.top()->insert({tr.getValue(), tr});
-    symtable.top()->insert({fl.getValue(), fl});
-
     for (auto &i : _acceptor->children)
     {
         i->accept(this);
@@ -217,4 +209,9 @@ void SemanticNodeVisitor::visitForNode(ForNode *_acceptor)
     symtable.top()->insert({iter.getValue(), iter});
     _acceptor->body->accept(this);
     symtable.pop();
+}
+
+void SemanticNodeVisitor::stdinit(localtable_t* _std)
+{
+    symtable.emplace(_std);
 }

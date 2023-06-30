@@ -12,4 +12,5 @@ private:
 public:
     SemanticAnalyzer();
     void check(AST *_ast);
+    void stdinit();
 };
