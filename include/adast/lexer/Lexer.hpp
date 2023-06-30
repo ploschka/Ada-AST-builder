@@ -17,8 +17,8 @@ private:
 
     Type recognize(const std::string& _id) const;
 public:
-    void open(std::istream& _stream);
-    void setState(LexerStateInterface* _state);
-    Token getToken();
+    void open(std::istream& _stream) override;
+    void setState(LexerStateInterface* _state) override;
+    Token getToken() override;
     void print_all_tokens() override;
 };

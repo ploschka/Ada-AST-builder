@@ -12,16 +12,18 @@ set(tokenlib src/adast/Token.cpp)
 set(astlib src/adast/ASTNode.cpp src/adast/AST.cpp)
 set(lexlib src/adast/Lexer.cpp src/adast/LexerFactory.cpp src/adast/LexerStates.cpp src/adast/FileData.cpp)
 set(parslib src/adast/Parser.cpp src/adast/ParserFactory.cpp)
+set(semlib src/adast/SemanticAnalyzer.cpp src/adast/SemanticNodeVisitor.cpp src/adast/SemanticAnalyzerFactory.cpp)
 
 add_library(token STATIC ${tokenlib})
 add_library(ast STATIC ${astlib})
 add_library(lexer STATIC ${lexlib})
 add_library(parser STATIC ${parslib})
+add_library(semantic STATIC ${semlib})
 
 target_link_libraries(lexer token)
 target_link_libraries(parser lexer ast token)
 
-set(libs lexer parser)
+set(libs lexer parser semantic)
 
 add_executable(${exename} main.cpp)
 set_property(TARGET ${exename} PROPERTY CXX_STANDARD 17)
